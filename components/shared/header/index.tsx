@@ -2,9 +2,8 @@ import Link from "next/link";
 import React from "react";
 import Image from "next/image";
 import { APP_NAME } from "@/lib/constants";
-import { ShoppingCart, UserIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import ModeToggle from "./mode-toggle";
+
+import Menu from "./menu";
 const Header = () => {
   return (
     <div className="w-full border-b">
@@ -23,21 +22,7 @@ const Header = () => {
             </span>
           </Link>
         </div>
-        <div className="flex-start space-x-2">
-          <ModeToggle />
-          <Button variant="ghost" asChild>
-            <Link href="/cart">
-              <ShoppingCart />
-              购物车
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/sign-in">
-              <UserIcon />
-              登录
-            </Link>
-          </Button>
-        </div>
+        <Menu />
       </div>
     </div>
   );
