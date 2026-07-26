@@ -4,3 +4,5 @@ export const DESCRIPTION =
   process.env.NEXT_PUBLIC_DESCRIPTION || "万购商城是一个基于Next.js的商城项目";
 export const SERVER_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3000";
+export const LATEST_PRODUCT_LIMIT =
+  Number(process.env.NEXT_PUBLIC_LATEST_PRODUCT_LIMIT) || 4;

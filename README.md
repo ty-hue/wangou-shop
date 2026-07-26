@@ -595,3 +595,111 @@ export default ModeToggle;
 2. **`theme` 是用户选择的模式**：可能是 `"system"`，不要用它来判断图标显示。
 3. **`resolvedTheme` 是实际生效的主题**：永远是 `"light"` 或 `"dark"`，适合用来判断图标显示。
 4. **"跟随系统"依赖操作系统设置**：和时间无关，取决于用户在系统设置中选择的外观模式。
+
+---
+
+# Prisma Decimal 对象渲染报错问题
+
+## 问题场景
+
+我用 Prisma 从数据库查出来商品数据，传给 React 组件渲染，结果页面就崩了：
+
+```
+Console Error: Decimal objects cannot be rendered as text children.
+```
+
+报错位置是这样的：
+
+```tsx
+<p>{product.rating} 星</p>
+```
+
+我当时就懵了——`rating` 在数据库里不就是个数字吗（`Decimal(3,2)`），凭啥不能渲染？
+
+## 原因
+
+Prisma 从数据库查 `Decimal` 类型的字段时，返回的不是普通 JS 数字，而是一个 **Prisma 内部的 Decimal 对象**。React 不认识这个对象，不知道怎么把它变成页面上的文字，所以直接就报错了。
+
+打个比方：你让一个人读出纸条上的内容，结果纸条是用阿拉伯文写的，他看不懂，就报错了。我直接把 Prisma 的 Decimal 对象丢给 React 渲染，React 也看不懂。
+
+## 解决方案
+
+### 方案一：每个渲染处手动转（笨办法）
+
+```tsx
+<p>{Number(product.rating)} 星</p>
+```
+
+能用，但每个地方都要写 `Number()`，容易漏。
+
+### 方案二：在数据查询层统一洗一次（推荐）
+
+在 `lib/utils.ts` 里写一个工具函数：
+
+```ts
+export function converToPlainObject<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value));
+}
+```
+
+每次从数据库查完数据，先过一遍这个函数：
+
+```ts
+export async function getLatestProducts() {
+  const data = await prisma.product.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 4,
+  });
+  return converToPlainObject(data);  // ← 洗一下
+}
+```
+
+之后组件里直接用，不再需要 `Number()`：
+
+```tsx
+<p>{product.rating} 星</p>  {/* 已经是普通数字了 */}
+```
+
+## 为什么 JSON.stringify 再 JSON.parse 就能解决问题
+
+这就说到 Prisma 的 `Decimal` 类偷偷实现了一个叫 `toJSON()` 的方法。
+
+`JSON.stringify` 在序列化一个对象时，会先去检查这个对象有没有 `toJSON()` 方法。如果有，就用 `toJSON()` 的返回值代替原对象：
+
+```ts
+// Prisma 内部的实现大概是这样的
+class Decimal {
+  toJSON() {
+    return 4.5;  // 序列化时返回普通数字
+  }
+}
+```
+
+所以流程是：
+
+```
+Decimal(4.5) → JSON.stringify 发现 toJSON() → 拿到 4.5 → 输出 "4.5"
+                                                                       ↓
+React 渲染 ← 普通数字 4.5 ← JSON.parse 还原对象 ← 这坨 JSON 字符串
+```
+
+整个过程等价于"把 Decimal 对象拆开摊平，重新组装成一个普通 JS 对象"，里面的 Decimal 都变成了普通数字。
+
+## 传数组进去也能行
+
+我一开始还有个困惑：`converToPlainObject` 接收的是一个数组（`prisma.product.findMany()` 返回的是数组），数组里套对象，对象里有 Decimal，这样也能洗吗？
+
+答案是能。`JSON.stringify` 是递归的，它会**自动钻进去**：
+
+```
+数组 → 遍历每个元素 → 每个对象 → 遍历每个属性 → 遇到 Decimal → 调 toJSON() → 变成普通数字
+```
+
+就像你洗一串葡萄，不可能只洗表面那层皮，肯定是一颗一颗掰下来洗。`JSON.stringify` 也是一样，自动钻到最底层。
+
+## 那其他类型的字段怎么办
+
+普通的 `Int`、`Float`、`String` 不受影响。JSON 本来就有独立的数字类型，这些字段怎么进去就怎么出来，不会变成字符串。
+
+只有 `Decimal` 这种 Prisma 内部的特殊类型才需要"洗一下"。
+
