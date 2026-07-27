@@ -9,7 +9,7 @@ const ProductCard = ({ product }: { product: Product }) => {
     <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle className="p-0 items-center">
-          <Link href={`/products/${product.slug}`}>
+          <Link href={`/product/${product.id}`}>
             <Image
               src={product.images[0]}
               alt={product.slug}
@@ -22,7 +22,7 @@ const ProductCard = ({ product }: { product: Product }) => {
       </CardHeader>
       <CardContent className="p-4 grid gap-4">
         <div className="text-xs">{product.brand}</div>
-        <Link href={`/products/${product.slug}`}>
+        <Link href={`/product/${product.id}`}>
           <h2 className="text-sm font-medium ">{product.slug}</h2>
         </Link>
         <div className="flex-between gap-4">
