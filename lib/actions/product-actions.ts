@@ -1,9 +1,7 @@
-import { createPrismaClient } from "@/lib/db";
+import prisma from "@/db/db";
 import { converToPlainObject } from "@/lib/utils";
 import { LATEST_PRODUCT_LIMIT } from "../constants";
 import { Product } from "@/types";
-
-const prisma = await createPrismaClient();
 
 export async function getLatestProducts(): Promise<Product[]> {
   const data = await prisma.product.findMany({
