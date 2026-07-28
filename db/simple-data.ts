@@ -1,11 +1,19 @@
-import { ProductCreateManyInput } from "@/lib/generated/prisma/models";
-
-type simpleDataType = {
-  title: string;
-  products: ProductCreateManyInput[];
-};
-const simpleData: simpleDataType = {
-  title: "商品列表",
+import { hashSync } from "bcrypt-ts-edge";
+const simpleData = {
+  users: [
+    {
+      name: "TangYang",
+      email: "tangyang@163.com",
+      password: hashSync("123456", 10),
+      role: "admin",
+    },
+    {
+      name: "John Doe",
+      email: "johndoe@163.com",
+      password: hashSync("123456", 10),
+      role: "user",
+    },
+  ],
   products: [
     {
       name: "女款夏季新款時尚優雅休閒高低下擺蝴蝶結領口無袖上衣",

@@ -21,3 +21,8 @@ export const insertProductSchema = z.object({
   banner: z.string().nullable(),
   price: currency,
 });
+
+export const signInFormSchema = z.object({
+  email: z.string().email("请输入正确的邮箱格式"),
+  password: z.string().min(6, "密码不能小于6个字符"),
+});

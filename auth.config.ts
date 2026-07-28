@@ -1,0 +1,35 @@
+import GitHub from "next-auth/providers/github";
+import type { NextAuthConfig } from "next-auth";
+
+export default {
+  pages: {
+    signIn: "/sign-in",
+    error: "/sign-in",
+  },
+  session: {
+    strategy: "jwt",
+  },
+  providers: [GitHub],
+  callbacks: {
+    async jwt({ token, user, trigger, session }: any) {
+      // 首次登录：将 user.id、user.role 写入 JWT
+      if (user) {
+        token.id = user.id;
+        token.role = user.role;
+      }
+      // 用户更新资料时，同步新的 name 到 JWT
+      if (trigger === "update" && session) {
+        token.name = session.user.name;
+      }
+      return token;
+    },
+    async session({ session, token }: any) {
+      // 每次读取 session 时，从 JWT 把自定义字段注入 session.user
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+      }
+      return session;
+    },
+  },
+} satisfies NextAuthConfig;
