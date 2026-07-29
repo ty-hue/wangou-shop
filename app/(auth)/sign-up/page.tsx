@@ -1,7 +1,45 @@
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import React from "react";
-
-const SignUpPage = () => {
-  return <div>注册</div>;
+import Image from "next/image";
+import { APP_NAME } from "@/lib/constants";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import SignUpForm from "@/app/(auth)/sign-up/sign-up-form";
+export const metadata = {
+  title: "注册",
+};
+const SignUpPage = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) => {
+  const { callbackUrl } = await searchParams;
+  const session = await auth();
+  if (session) {
+    redirect(callbackUrl || "/");
+  }
+  return (
+    <div className="h-screen flex-center p-8">
+      <Card className="w-full p-8 md:max-w-sm">
+        <CardHeader className="flex justify-center">
+          <Image
+            src="/images/logo.svg"
+            alt={`${APP_NAME} logo`}
+            width={80}
+            height={80}
+            priority
+          />
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <h1 className="text-center font-bold text-2xl">注册</h1>
+          <p className="text-center text-sm text-gray-500">
+            注册即可进入{APP_NAME}
+          </p>
+          <SignUpForm />
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 export default SignUpPage;

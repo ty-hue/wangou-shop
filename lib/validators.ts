@@ -26,3 +26,15 @@ export const signInFormSchema = z.object({
   email: z.string().email("请输入正确的邮箱格式"),
   password: z.string().min(6, "密码不能小于6个字符"),
 });
+
+export const signUpFormSchema = z
+  .object({
+    name: z.string().min(3, "用户名不能小于3个字符"),
+    email: z.string().email("请输入正确的邮箱格式"),
+    password: z.string().min(6, "密码不能小于6个字符"),
+    confirmPassword: z.string().min(6, "确认密码不能小于6个字符"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "两次输入密码不一致",
+    path: ["confirmPassword"],
+  });
