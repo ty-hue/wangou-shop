@@ -8,8 +8,12 @@ import { redirect } from "next/navigation";
 export const metadata = {
   title: "登录",
 };
-const SignInPage = async (props: Promise<{ callbackUrl?: string }>) => {
-  const { callbackUrl } = await props;
+const SignInPage = async ({
+  searchParams,
+}: {
+  searchParams: Promise<{ callbackUrl?: string }>;
+}) => {
+  const { callbackUrl } = await searchParams;
   const session = await auth();
   if (session) {
     redirect(callbackUrl || "/");
