@@ -1143,3 +1143,130 @@ grid-column: span 2 / span 2;
 - `grid-area`：我就要在左上角（第 1 行第 1 列→第 2 行第 3 列），精确到网格线
 
 实际开发里 `col-span` 更常用，因为大多数情况只需要"某个元素宽一点"，没必要精确指定每根网格线。
+
+---
+
+# Server Component + form action 调用 Server Action 的技巧
+
+## 场景
+
+有一个下拉菜单组件，里面有一个"退出登录"按钮。按钮点了要调 `signOutUser()` 这个 Server Action。
+
+## 两种实现方式
+
+### 方案一：整个组件变成 Client Component（常见做法）
+
+```tsx
+"use client";
+
+const UserButton = () => {
+  const session = useSession(); // 客户端读取 session
+  return (
+    <DropdownMenu>
+      <DropdownMenuItem onClick={() => signOutUser()}>
+        退出登录
+      </DropdownMenuItem>
+    </DropdownMenu>
+  );
+};
+```
+
+代价：整个组件变成客户端组件，失去了服务端渲染（SEO 不友好，首屏慢）。
+
+### 方案二：组件保持 Server Component，用 `form action` 触发（推荐）
+
+```tsx
+// user-button.tsx — Server Component
+const UserButton = async () => {
+  const session = await auth(); // 服务端直接读 session，不需要 useSession()
+  return (
+    <DropdownMenu>
+      <form action={signOutUser}>
+        <button type="submit">退出登录</button>
+      </form>
+    </DropdownMenu>
+  );
+};
+```
+
+Server Component 不能写 `onClick`/`onSelect`（那是客户端 API），但**可以写 `form action`**。因为 `form action` 是 HTML 原生属性，不依赖客户端 JS，浏览器直接提交表单触发 Server Action。
+
+## 核心技巧
+
+**Server Component 里需要触发 Server Action 时，用 form action 代替 onClick。**
+
+因为：
+- `onClick` / `onSelect` = 客户端事件，只能在 Client Component 里用
+- `form action={serverAction}` = HTML 原生表单提交，Server Component 也能用
+- 浏览器提交表单时自动发 POST 请求，服务端执行 Server Action，跳转由 `NEXT_REDIRECT` 完成
+
+这样组件可以保持 Server Component，尽可能多地享受 SSR 带来的 SEO 和性能优势。
+
+## 注意
+
+如果组件内部有 UI 交互（如下拉菜单的 `DropdownMenuItem` 拦截了表单提交），只把需要交互的那一小部分抽成 Client Component，主体仍然保持 Server Component。比如我们把 `SignOutForm` 单独抽成了一个文件：
+
+```tsx
+// sign-out-form.tsx
+"use client";
+
+const SignOutForm = () => {
+  return (
+    <DropdownMenuItem
+      onSelect={(e) => {
+        e.preventDefault();
+        (document.getElementById("signout-form") as HTMLFormElement).requestSubmit();
+      }}
+    >
+      <form action={signOutUser} id="signout-form">
+        <button type="submit">退出登录</button>
+      </form>
+    </DropdownMenuItem>
+  );
+};
+```
+
+整个 `UserButton`（读 session、渲染头像、展示用户名）仍然是 Server Component，只有退出登录这个有交互的部分是 Client Component。
+
+---
+
+# NextAuth `signOut()` 内部做了什么
+
+调用 `signOut()` 后，NextAuth 在内部做了三件事：
+
+**1. 删除 cookie**
+
+删除 `next-auth.session-token` 这个加密 cookie。你的项目用的是 JWT 策略（`session: { strategy: "jwt" }`），登录状态全存在这个加密 cookie 里。删了 cookie 就是删了登录凭证，不需要查数据库。
+
+**2. 清理服务端 session（仅 database 策略）**
+
+如果你用的是 `session: { strategy: "database" }`，NextAuth 会去数据库的 `Session` 表里删掉对应记录。你用的是 JWT 策略，这一步直接跳过——JWT 状态下服务端没有 session 表要清理。
+
+**3. 重定向到首页**
+
+`signOut()` 调用后自动跳转到 `/`。和 `signIn()` 一样，它不是用 `next/navigation` 的 `redirect()`，而是通过抛出 `NEXT_REDIRECT` 来触发跳转。
+
+想自定义跳转地址：
+
+```ts
+await signOut({ redirectTo: "/sign-in" });
+```
+
+## 关键认知
+
+`signOut()` 走的是同样的"抛特殊错误"模式——它不是普通的 `return`，而是故意抛一个 `NEXT_REDIRECT` 让 Next.js 框架层去执行跳转。所以如果你在 try-catch 里包了 `signOut()`：
+
+```ts
+export async function signOutUser() {
+  try {
+    await signOut(); // ← 会抛 NEXT_REDIRECT
+  } catch (error) {
+    if (isRedirectError(error)) {
+      throw error; // 必须原样往上抛，不能吞掉
+    }
+    return { success: false, message: "退出失败" };
+  }
+}
+```
+
+和 `signIn("credentials", ...)` 的 try-catch 模式完全一样，必须识别 `isRedirectError` 然后原样 `throw`，否则跳转就被你吃掉了，用户点了退出但页面没反应。"
