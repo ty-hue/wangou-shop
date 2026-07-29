@@ -38,3 +38,24 @@ export const signUpFormSchema = z
     message: "两次输入密码不一致",
     path: ["confirmPassword"],
   });
+
+// 购物车单个商品验证器
+export const cartItemSchema = z.object({
+  productId: z.string().min(1, "商品ID不能为空"),
+  name: z.string().min(1, "商品名称不能为空"),
+  slug: z.string().min(1, "商品slug不能为空"),
+  qty: z.number().int().nonnegative("数量必须是一个正数"),
+  image: z.string().min(1, "商品图片不能为空"),
+  price: currency,
+});
+
+// 购物车验证器
+export const insertCartSchema = z.object({
+  items: z.array(cartItemSchema),
+  itemsPrice: currency,
+  totalPrice: currency,
+  shippingPrice: currency,
+  taxPrice: currency,
+  sessionCartId: z.string().min(1, "购物车ID不能小于1个字符"),
+  userId: z.string().optional().nullable(),
+});
