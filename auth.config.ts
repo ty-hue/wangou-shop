@@ -1,4 +1,5 @@
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 import type { NextAuthConfig } from "next-auth";
 
 export default {
@@ -9,7 +10,7 @@ export default {
   session: {
     strategy: "jwt",
   },
-  providers: [GitHub],
+  providers: [GitHub, Google],
   callbacks: {
     async jwt({ token, user, trigger, session }: any) {
       // 首次登录：将 user.id、user.role 写入 JWT
