@@ -16,6 +16,7 @@ const SignInPage = async ({
   const { callbackUrl } = await searchParams;
   const session = await auth();
   if (session) {
+    console.log("[SignInPage] session:", session);
     redirect(callbackUrl || "/");
   }
   return (
