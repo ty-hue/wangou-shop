@@ -5,6 +5,7 @@ import { signIn, signOut } from "@/auth";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { hashSync } from "bcrypt-ts-edge";
 import prisma from "@/db/db";
+import { formatError } from "../utils";
 
 // 邮箱密码登录
 export async function signInWithCredentials(
@@ -25,7 +26,7 @@ export async function signInWithCredentials(
     if (isRedirectError(error)) {
       throw error;
     }
-    return { success: false, message: "登录失败，邮箱或密码错误" };
+    return { success: false, message: formatError(error) };
   }
 }
 
@@ -61,6 +62,6 @@ export async function signUpUser(preState: unknown, formData: FormData) {
     if (isRedirectError(error)) {
       throw error;
     }
-    return { success: false, message: "注册失败" };
+    return { success: false, message: formatError(error) };
   }
 }
