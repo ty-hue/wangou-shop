@@ -9,11 +9,15 @@ import { SiGithub, SiGoogle, SiX } from "@icons-pack/react-simple-icons";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import { signInWithCredentials } from "@/lib/actions/user-actions";
+import { useSearchParams } from "next/navigation";
+
 const CredentialsSignInForm = () => {
   const [data, action] = useActionState(signInWithCredentials, {
     success: false,
     message: "",
   });
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
   const SignButton = () => {
     const { pending } = useFormStatus();
     return (
@@ -28,6 +32,7 @@ const CredentialsSignInForm = () => {
   };
   return (
     <form className="space-y-6" action={action}>
+      <input type="hidden" name="callbackUrl" value={callbackUrl} />
       <div>
         <Label htmlFor="email" className="mb-2">
           邮箱

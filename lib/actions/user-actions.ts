@@ -14,7 +14,10 @@ export async function signInWithCredentials(
       email: formData.get("email"),
       password: formData.get("password"),
     });
-    await signIn("credentials", user);
+    await signIn("credentials", {
+      ...user,
+      redirectTo: (formData.get("callbackUrl") as string) || "/",
+    });
     return { success: true, message: "登录成功" };
   } catch (error) {
     if (isRedirectError(error)) {

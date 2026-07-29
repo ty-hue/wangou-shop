@@ -8,10 +8,11 @@ import { redirect } from "next/navigation";
 export const metadata = {
   title: "登录",
 };
-const SignInPage = async () => {
+const SignInPage = async (props: Promise<{ callbackUrl?: string }>) => {
+  const { callbackUrl } = await props;
   const session = await auth();
   if (session) {
-    redirect("/");
+    redirect(callbackUrl || "/");
   }
   return (
     <div className="h-screen flex-center p-8">
@@ -22,6 +23,7 @@ const SignInPage = async () => {
             alt={`${APP_NAME} logo`}
             width={80}
             height={80}
+            priority
           />
         </CardHeader>
         <CardContent className="flex flex-col gap-3">

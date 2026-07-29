@@ -22,7 +22,7 @@ const HomePage = async () => {
         <button type="submit">Signin with GitHub</button>
       </form>
       <UserAvatar />
-      <ProductList data={products} title="商品列表" />
+      <ProductList data={products} title="" />
     </>
   );
 };
