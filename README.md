@@ -1270,3 +1270,60 @@ export async function signOutUser() {
 ```
 
 和 `signIn("credentials", ...)` 的 try-catch 模式完全一样，必须识别 `isRedirectError` 然后原样 `throw`，否则跳转就被你吃掉了，用户点了退出但页面没反应。"
+
+---
+
+# revalidatePath 深度理解
+
+## 它做了什么
+
+`revalidatePath(path)` 告诉 Next.js：把这个路径的缓存标记为失效，**下一次**访问时重新生成。
+
+```ts
+revalidatePath(`/product/${product.id}`);
+```
+
+注意：它只管**下次**，不管**当前**——调用后当前页面不会立刻变。
+
+## Next.js 15 的缓存层
+
+| 缓存层 | 存储位置 | 静态页面 | 动态页面（用了 cookie/params/searchParams/headers） |
+|---|---|---|---|
+| **Router Cache**（客户端路由缓存） | 浏览器内存 | 5 分钟 | 不缓存（0 秒） |
+| **Full Route Cache**（整页 HTML） | 服务器 | 缓存 | 不缓存 |
+| **Data Cache**（fetch 数据） | 服务器 | 持久缓存 | 不缓存 |
+
+## 什么时候需要 revalidatePath
+
+**需要**：
+- 静态页面（build 时生成），数据变了得让缓存失效
+- ISR 页面（`revalidate` 定时更新），想提前触发刷新
+- 页面用了 `fetch()`（有 Data Cache），数据变了得清 data 缓存
+
+**不需要**：
+- 动态页面（读 cookie/params/用 Prisma 直连），Next.js 15 默认不缓存它
+- 只是想让当前页面即时刷新（这种情况用 `router.refresh()`）
+
+## 想要当前页面也即时更新？
+
+`revalidatePath` + `router.refresh()` 组合：
+
+```ts
+// Server Action 里：清缓存，管下次
+revalidatePath(`/product/${product.id}`);
+
+// 客户端组件里：即时刷新当前页面，管这次
+import { useRouter } from "next/navigation";
+const router = useRouter();
+router.refresh(); // 不发整页刷新，只重新拉 RSC payload
+```
+
+- `revalidatePath`：告诉服务器"缓存作废，下次给新的"
+- `router.refresh()`：告诉客户端"别等了，现在就去拉新的 RSC payload"
+
+## 关键认知
+
+1. `revalidatePath` 是"清缓存"操作，不是"推数据"操作——它不会主动通知客户端刷新
+2. 动态页面在 Next.js 15 里默认不做 Router Cache，`revalidatePath` 对这类页面在客户端路由缓存层面无实际作用
+3. 但它依然是好习惯——防御性编程，以后页面变成 ISR/静态生成时缓存逻辑自动生效
+4. 想让用户立刻看到变化 → `router.refresh()`；想让下次访问的人也看到变化 → `revalidatePath`；两者配合 → 完美

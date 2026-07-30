@@ -5,7 +5,7 @@ import { formatNumberWithDecimal } from "./utils";
 const currency = z
   .string()
   .refine(
-    (value) => /^\d(\.\d{2})?$/.test(formatNumberWithDecimal(Number(value))),
+    (value) => /^\d+(\.\d{2})?$/.test(formatNumberWithDecimal(Number(value))),
     "商品价格必须精确为两位小数",
   );
 

@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import ProductPrice from "@/components/shared/product/product-price";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import ProdcutImages from "@/components/shared/product/product-images";
+import AddToCart from "@/components/shared/product/add-to-cart";
 
 const ProductDetailPage = async (props: {
   params: Promise<{ id: string }>;
@@ -41,7 +41,7 @@ const ProductDetailPage = async (props: {
               </div>
             </div>
             <div className="mt-10">
-              <p className="font-semibold">Description</p>
+              <p className="font-semibold">商品描述</p>
               <p>{product.description}</p>
             </div>
           </div>
@@ -65,7 +65,16 @@ const ProductDetailPage = async (props: {
                 </div>
                 {product.stock > 0 && (
                   <div className="flex-center">
-                    <Button className="w-full">加入购物车</Button>
+                    <AddToCart
+                      item={{
+                        productId: product.id,
+                        name: product.name,
+                        slug: product.slug,
+                        qty: 1,
+                        image: product.images[0],
+                        price: product.price,
+                      }}
+                    />
                   </div>
                 )}
               </CardContent>
