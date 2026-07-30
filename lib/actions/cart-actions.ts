@@ -23,6 +23,7 @@ const calcPrice = (items: CartItem[]) => {
   };
 };
 
+// 加入购物车
 export async function addItemToCart(data: CartItem) {
   try {
     const sessionCartId = (await cookies()).get("sessionCartId")?.value;
@@ -93,6 +94,7 @@ export async function addItemToCart(data: CartItem) {
   }
 }
 
+// 获取购物车
 export async function getMyCart() {
   const sessionCartId = (await cookies()).get("sessionCartId")?.value;
   if (!sessionCartId) {
@@ -119,4 +121,56 @@ export async function getMyCart() {
     shippingPrice: cart.shippingPrice.toString(),
     taxPrice: cart.taxPrice.toString(),
   });
+}
+
+// 从购物车移除商品
+export async function removeItemFromCart(productId: string) {
+  try {
+    const sessionCartId = (await cookies()).get("sessionCartId")?.value;
+    if (!sessionCartId) {
+      throw new Error("sessionCartId不存在");
+    }
+    const product = await prisma.product.findFirst({
+      where: {
+        id: productId,
+      },
+    });
+    if (!product) {
+      throw new Error("商品不存在");
+    }
+    const cart = await getMyCart();
+    if (!cart) {
+      throw new Error("购物车不存在");
+    }
+    const existItem = (cart.items as CartItem[]).find(
+      (x) => x.productId === productId,
+    );
+    if (!existItem) {
+      throw new Error("商品不存在购物车中");
+    }
+    if (existItem.qty === 1) {
+      cart.items = cart.items.filter((x) => x.productId !== productId);
+    } else {
+      existItem.qty -= 1;
+    }
+    await prisma.cart.update({
+      where: {
+        id: cart.id,
+      },
+      data: {
+        items: cart.items,
+        ...calcPrice(cart.items),
+      },
+    });
+    revalidatePath(`/product/${product.id}`);
+    return {
+      success: true,
+      message: `${product.name} 已从购物车移除`,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: formatError(error),
+    };
+  }
 }
