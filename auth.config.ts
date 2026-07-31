@@ -2,6 +2,8 @@ import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import type { NextAuthConfig } from "next-auth";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import prisma from "./db/db";
 
 export default {
   pages: {
@@ -22,6 +24,32 @@ export default {
       // 用户更新资料时，同步新的 name 到 JWT
       if (trigger === "update" && session) {
         token.name = session.user.name;
+      }
+      if (trigger === "signIn" || trigger === "signUp") {
+        const cookieObject = await cookies();
+        const sessionCartId = cookieObject.get("sessionCartId")?.value;
+        if (sessionCartId) {
+          const sessionCart = await prisma.cart.findFirst({
+            where: {
+              id: sessionCartId,
+            },
+          });
+          if (sessionCart) {
+            await prisma.cart.deleteMany({
+              where: {
+                userId: user.id,
+              },
+            });
+            await prisma.cart.update({
+              where: {
+                id: sessionCartId,
+              },
+              data: {
+                userId: user.id,
+              },
+            });
+          }
+        }
       }
       return token;
     },
