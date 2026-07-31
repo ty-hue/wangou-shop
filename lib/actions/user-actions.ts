@@ -12,7 +12,7 @@ import { hashSync } from "bcrypt-ts-edge";
 import prisma from "@/db/db";
 import { formatError } from "../utils";
 import { ShippingAddress } from "@/types";
-import z, { success } from "zod";
+import z from "zod";
 
 // 邮箱密码登录
 export async function signInWithCredentials(
