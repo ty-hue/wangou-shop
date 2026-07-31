@@ -1,6 +1,7 @@
 "use server";
 
 import {
+  paymentMethodSchema,
   shippingAddressSchema,
   signInFormSchema,
   signUpFormSchema,
@@ -11,6 +12,7 @@ import { hashSync } from "bcrypt-ts-edge";
 import prisma from "@/db/db";
 import { formatError } from "../utils";
 import { ShippingAddress } from "@/types";
+import z, { success } from "zod";
 
 // 邮箱密码登录
 export async function signInWithCredentials(
@@ -104,6 +106,33 @@ export async function updateUserAddress(data: ShippingAddress) {
       },
     });
     return { success: true, message: "更新收获地址成功" };
+  } catch (error) {
+    return { success: false, message: formatError(error) };
+  }
+}
+
+// 更新用户的支付方式
+export async function updateUserPaymentMethod(
+  data: z.infer<typeof paymentMethodSchema>,
+) {
+  try {
+    const session = await auth();
+    const currentUser = await prisma.user.findFirst({
+      where: { id: session?.user?.id },
+    });
+    if (!currentUser) {
+      throw new Error("用户不存在");
+    }
+    const paymentMethod = paymentMethodSchema.parse(data);
+    await prisma.user.update({
+      where: {
+        id: currentUser.id,
+      },
+      data: {
+        paymentMethod: paymentMethod.type,
+      },
+    });
+    return { success: true, message: "更新用户支付方式成功" };
   } catch (error) {
     return { success: false, message: formatError(error) };
   }

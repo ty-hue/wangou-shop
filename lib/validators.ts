@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { formatNumberWithDecimal } from "./utils";
+import { PAYMENT_METHODS } from "./constants";
 
 // 商品价格验证器
 const currency = z
@@ -69,3 +70,12 @@ export const shippingAddressSchema = z.object({
   lat: z.number().optional(),
   lng: z.number().optional(),
 });
+
+export const paymentMethodSchema = z
+  .object({
+    type: z.string().min(1, "支付方式不能为空"),
+  })
+  .refine((data) => PAYMENT_METHODS.includes(data.type), {
+    message: "暂不支持该支付方式",
+    path: ["type"],
+  });
