@@ -17,3 +17,13 @@ export const signUpDefaultValues = {
   password: "",
   confirmPassword: "",
 };
+
+export const shippingAddressDefaultValues = {
+  fullName: "Tangyang",
+  streetAddress: "泉塘街道",
+  city: "长沙",
+  postalCode: "21312",
+  country: "中国",
+  lat: undefined,
+  lng: undefined,
+};

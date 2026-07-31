@@ -59,3 +59,13 @@ export const insertCartSchema = z.object({
   sessionCartId: z.string().min(1, "购物车ID不能小于1个字符"),
   userId: z.string().optional().nullable(),
 });
+
+export const shippingAddressSchema = z.object({
+  fullName: z.string().min(3, "姓名不能小于3个字符"),
+  streetAddress: z.string().min(3, "街道地址不能小于3个字符"),
+  city: z.string().min(3, "城市不能小于3个字符"),
+  postalCode: z.string().min(3, "邮政编码不能小于3个字符"),
+  country: z.string().min(3, "国家不能小于3个字符"),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
+});
