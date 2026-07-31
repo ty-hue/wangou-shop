@@ -2,8 +2,6 @@ import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
 import type { NextAuthConfig } from "next-auth";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import prisma from "./db/db";
 
 export default {
   pages: {
@@ -25,32 +23,6 @@ export default {
       if (trigger === "update" && session) {
         token.name = session.user.name;
       }
-      if (trigger === "signIn" || trigger === "signUp") {
-        const cookieObject = await cookies();
-        const sessionCartId = cookieObject.get("sessionCartId")?.value;
-        if (sessionCartId) {
-          const sessionCart = await prisma.cart.findFirst({
-            where: {
-              id: sessionCartId,
-            },
-          });
-          if (sessionCart) {
-            await prisma.cart.deleteMany({
-              where: {
-                userId: user.id,
-              },
-            });
-            await prisma.cart.update({
-              where: {
-                id: sessionCartId,
-              },
-              data: {
-                userId: user.id,
-              },
-            });
-          }
-        }
-      }
       return token;
     },
     async session({ session, token }: any) {
@@ -62,7 +34,20 @@ export default {
       }
       return session;
     },
-    authorized({ request }: any) {
+    authorized({ request, auth }: any) {
+      const protectedPaths = [
+        /\/shipping-address/,
+        /\/payment-method/,
+        /\/place-order/,
+        /\/profile/,
+        /\/user/,
+        /\/order/,
+        /\/admin/,
+      ];
+      const { pathname } = request.nextUrl;
+      if (!auth && protectedPaths.some((path) => path.test(pathname))) {
+        return false;
+      }
       if (!request.cookies.get("sessionCartId")) {
         const sessionCartId = crypto.randomUUID();
         const newRequestHeaders = new Headers(request.headers);
